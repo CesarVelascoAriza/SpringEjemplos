@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: demo-security
+  security:
+    user: 
+      name: admin
+      password: admin123
