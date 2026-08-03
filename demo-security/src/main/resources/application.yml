@@ -5,3 +5,24 @@ spring:
     user: 
       name: admin
       password: admin123
+  datasource:
+    url: jdbc:h2:mem:testdb   # Base en memoria (se borra al apagar la app)
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  h2:
+    console:
+      enabled: true           # Activa la consola web de H2
+      path: /h2-console       # URL para acceder (http://localhost:8080/h2-console)
+  jpa:
+    hibernate:
+      ddl-auto: update        # Crea/actualiza tablas automáticamente
+    show-sql: true            # Muestra las consultas en consola
+    properties:
+      hibernate:
+        format_sql: true
+    sql:
+      init:
+        mode: always           # Inicializa la base de datos al arrancar la app
+        data-locations: classpath:data.sql  # Archivo con datos iniciales
+        schema-locations: classpath:schema.sql  # Archivo con esquema de la base de datos
