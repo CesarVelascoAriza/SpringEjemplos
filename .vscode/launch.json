@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "SecurityOauht2Application",
+            "request": "launch",
+            "mainClass": "com.example.security.security.SecurityOauht2Application"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-DemoSecurityApplication<demo-security>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.example.demo.security.DemoSecurityApplication",
+            "projectName": "demo-security",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-SecurityOauht2Application<security-oauht2>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.security.security.SecurityOauht2Application",
+            "projectName": "security-oauht2",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
