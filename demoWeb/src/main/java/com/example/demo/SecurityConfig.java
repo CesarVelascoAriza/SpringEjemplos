@@ -1,38 +1,29 @@
 package com.example.demo;
 
-import java.security.CryptoPrimitive;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-
-import static org.springframework.security.config.Customizer.withDefaults;
-
-import com.example.demo.service.UsuarioService;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-	@Autowired
-	private UsuarioService userDetailsService;
-	@Autowired
-	private BCryptPasswordEncoder bcrypt;
-	
-	@Bean
-	public BCryptPasswordEncoder passwordEncoder() {
-		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-		return bCryptPasswordEncoder;
-	}
-
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
-				.httpBasic(withDefaults());
+		http
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.csrf(csrf -> csrf.disable())
+			.authorizeHttpRequests(authorize -> authorize
+					.requestMatchers("/", "/error").permitAll()
+					.requestMatchers(org.springframework.http.HttpMethod.GET, "/personas/**")
+					.hasAuthority("SCOPE_users.read")
+					.requestMatchers(org.springframework.http.HttpMethod.POST, "/personas/**")
+					.hasAuthority("SCOPE_users.write")
+					.anyRequest().authenticated())
+			.oauth2ResourceServer(oauth2 -> oauth2.jwt());
 		return http.build();
 	}
 
