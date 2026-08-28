@@ -9,17 +9,15 @@ import org.springframework.security.oauth2.server.authorization.client.InMemoryR
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.core.annotation.Order;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
-import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 
@@ -43,13 +41,9 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;  
 import java.security.KeyPair;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import org.springframework.http.MediaType;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import com.nimbusds.jose.jwk.RSAKey;
 
 
 @Configuration
@@ -76,9 +70,6 @@ public class SecurityConfig {
     @Bean
     @Order(1)
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(withDefaults()); // Enable OpenID Connect 1.0
         http.exceptionHandling((exceptions) -> exceptions
                 .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
                 .oauth2ResourceServer((resourceServer) -> resourceServer
@@ -114,8 +105,7 @@ public class SecurityConfig {
     }
     @Bean
     AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -153,19 +143,17 @@ public class SecurityConfig {
         return keyPairGenerator;
     }
 
-    RSAKeyPair rsaKeyPair() throws Exception {
+    KeyPair rsaKeyPair() throws Exception {
         KeyPairGenerator keyPairGenerator = keyPairGenerator();
-        var publicKey = keyPairGenerator.generateKeyPair().getPublic();
-        var privateKey = keyPairGenerator.generateKeyPair().getPrivate();
-        return new RSAKeyPair(publicKey, privateKey).keyId(UUID.randomUUID().toString()); 
+        return keyPairGenerator.generateKeyPair();
     }
 
     @Bean
     JWKSource<SecurityContext> jwkSource() throws Exception {
-        RSAKeyPair rsaKeyPair = rsaKeyPair();
+        KeyPair rsaKeyPair = rsaKeyPair();
         RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) rsaKeyPair.getPublic())
                 .privateKey((RSAPrivateKey) rsaKeyPair.getPrivate())
-                .keyID(rsaKeyPair.getKeyId())
+            .keyID(UUID.randomUUID().toString())
                 .build();
         JWKSet jwkSet = new JWKSet(rsaKey);
         return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
@@ -173,7 +161,8 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) throws Exception {
-        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+        KeyPair rsaKeyPair = rsaKeyPair();
+        return NimbusJwtDecoder.withPublicKey((RSAPublicKey) rsaKeyPair.getPublic()).build();
     }
     @Bean
     OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
